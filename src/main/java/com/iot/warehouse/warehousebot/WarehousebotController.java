@@ -1,7 +1,9 @@
 package com.iot.warehouse.warehousebot;
 
 import com.iot.warehouse.warehousebot.entity.Bot;
+import com.iot.warehouse.warehousebot.entity.RFID;
 import com.iot.warehouse.warehousebot.service.BotService;
+import com.iot.warehouse.warehousebot.service.RFIDService;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,6 +23,9 @@ public class WarehousebotController {
 
   @Autowired
   private BotService botService;
+
+  @Autowired
+  private RFIDService rfidService;
 
   @RequestMapping(method = RequestMethod.GET, value = "bot/{botId}")
   public ResponseEntity<Bot> getBot(@PathVariable("botId") String botId) {
@@ -52,4 +57,34 @@ public class WarehousebotController {
     return ResponseEntity.status(HttpStatus.OK).body(result);
   }
 
+  @RequestMapping(method = RequestMethod.GET, value = "rfid/{rfId}")
+  public ResponseEntity<RFID> getRFID(@PathVariable("rfId") String rfId) {
+    RFID response = rfidService.getWareHouseRDID(rfId);
+    return ResponseEntity.status(HttpStatus.OK).body(response);
+  }
+
+
+  @RequestMapping(method = RequestMethod.GET, value = "rfid/getrfids")
+  public ResponseEntity<List<RFID>> getRFIDs() {
+    List<RFID> response = rfidService.getWareHouseRFIDs();
+    return ResponseEntity.status(HttpStatus.OK).body(response);
+  }
+
+  @RequestMapping(method = RequestMethod.POST, value = "/rfid")
+  public ResponseEntity<RFID> addNewRFID(@RequestBody RFID rfid) {
+    RFID response = rfidService.addNewRFID(rfid);
+    return ResponseEntity.status(HttpStatus.OK).body(response);
+  }
+
+  @RequestMapping(method = RequestMethod.PUT, value = "/rfid")
+  public ResponseEntity<RFID> updateRFID(@RequestBody RFID rfid) {
+    RFID response = rfidService.updateRFID(rfid);
+    return ResponseEntity.status(HttpStatus.OK).body(response);
+  }
+
+  @RequestMapping(method = RequestMethod.DELETE, value = "/rfid/{rfId}")
+  public ResponseEntity<Integer> removeRFID(@PathVariable("rfId") String rfId) {
+    Integer result = rfidService.deleteRFID(rfId);
+    return ResponseEntity.status(HttpStatus.OK).body(result);
+  }
 }
