@@ -1,14 +1,13 @@
 package com.iot.warehouse.warehousebot.service;
 
 import com.iot.warehouse.warehousebot.entity.Bot;
-import com.iot.warehouse.warehousebot.entity.RFID;
 import com.iot.warehouse.warehousebot.repository.BotRepository;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
- * Created by i333127 on 05/05/18.
+ * Created by Deepak Singhvi on 05/05/18.
  */
 
 @Service

@@ -1,7 +1,7 @@
 package com.iot.warehouse.warehousebot.entity;
 
 /**
- * Created by i333127 on 06/05/18.
+ * Created by Deepak Singhvi on 06/05/18.
  */
 public class RFID {
 

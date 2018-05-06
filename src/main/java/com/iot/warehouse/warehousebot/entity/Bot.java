@@ -4,7 +4,7 @@ package com.iot.warehouse.warehousebot.entity;
 import java.util.UUID;
 
 /**
- * Created by i333127 on 05/05/18.
+ * Created by Deepak Singhvi on 05/05/18.
  */
 
 public class Bot {

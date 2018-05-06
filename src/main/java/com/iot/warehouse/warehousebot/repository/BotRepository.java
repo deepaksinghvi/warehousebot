@@ -12,7 +12,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 /**
- * Created by i333127 on 05/05/18.
+ * Created by Deepak Singhvi on 05/05/18.
  */
 @Repository
 public class BotRepository {
