@@ -1,3 +1,4 @@
+
 import RPi.GPIO as IO
 import time
 import SimpleMFRC522
@@ -10,6 +11,7 @@ IO.setmode(IO.BCM)
 IO.setup(16,IO.IN) #PIN 36 -> Left IR out
 IO.setup(20,IO.IN) #PIN 38 -> Right IR out
 IO.setup(21,IO.IN) #PIN 40 -> Centre IR out
+IO.setup(18, IO.IN, pull_up_down=IO.PUD_UP)#PIN 12 -> push button
 LIR=16
 RIR=20
 CIR=21
@@ -30,10 +32,11 @@ itemPicked=False
 locationNumber=""
 previousNumber=""
 locNumber=""
+nextAction=""
 def manualDelay():
-    time.sleep(0.01)
+    time.sleep(0.03)
     stayStill()
-    time.sleep(0.01)
+    time.sleep(0.03)
 
 def moveStraight():
     IO.output(MRT1,True) #1A+ 31
@@ -55,19 +58,33 @@ def turnRight():
     IO.output(MLT1,True) #2A+
     IO.output(MLT2,False) #2B-
     manualDelay()
-    
+
+def hardRight():
+    IO.output(MRT1,False) #1A+
+    IO.output(MRT2,True) #1B-
+    IO.output(MLT1,True) #2A+
+    IO.output(MLT2,False) #2B-
+    manualDelay()
+
+def hardLeft():
+    IO.output(MRT1,True) #1A+
+    IO.output(MRT2,False) #1B-
+    IO.output(MLT1,False) #2A+
+    IO.output(MLT2,True) #2B-
+    manualDelay()
+
 def turnOneEightDegree():
     IO.output(MRT1,False) #1A+
     IO.output(MRT2,True) #1B-
     IO.output(MLT1,True) #2A+
     IO.output(MLT2,False) #2B-
     manualDelay()
-    
+
 def stayStill():
     IO.output(MRT1,True) #1A+
     IO.output(MRT2,True) #1B-
     IO.output(MLT1,True) #2A+
-    IO.output(MLT2,True) #2B-import RPi.GPIO as IO    
+    IO.output(MLT2,True) #2B-import RPi.GPIO as IO
 
 def readBotInstruction():
     global currLoc
@@ -88,12 +105,95 @@ def readBotInstruction():
         nextLoc = str(intermediateLoc)
     else:
         myResponse.raise_for_status()
-        
+
 def moveBotBasedOnLocation(location):
     if(location=="L1" or location =="L3" or location =="L5"):
         turnLeft()
     else:
         turnRight()
+
+def waitForInstruction():
+    while True:
+        input_state = IO.input(18)
+        if input_state != False:
+            print('Button Not Pressed... waiting')
+            time.sleep(0.2)
+        else:
+            print('Got instruction to move to next location')
+            t = 50
+            for i in range(t):
+                hardRight()
+            break
+
+def performRight():
+    global nextAction
+    global locNumber
+    global nextLoc
+    moveStraight()
+    if(locNumber==""):
+        time.sleep(2)
+        print("Reading location details for correct right turn")
+        id,locNumber = reader.readOnce()
+        #if locNumber is None, i.e. invalid, we set locNumber as empty string to read it again
+        if(locNumber==None):
+            locNumber=""
+
+    print("locNumb value : " + locNumber)
+    print("nextLoc before match" + nextLoc)
+    if(locNumber.startswith(nextLoc)):
+        nextLoc = str(endLoc)
+        print("nextLoc after match" + nextLoc)
+        t =15
+        for i in range(t):
+            moveStraight()
+        t = 30
+        for i in range(t):
+            hardRight()
+            locNumber=""
+        t =25
+        for i in range(t):
+            moveStraight()
+        waitForInstruction()
+        nextAction="LEFT"
+    else:
+        print("location does not match... move straight")
+        moveStraight()
+        locNumber=""
+
+def performLeft():
+    global nextAction
+    global locNumber
+    global nextLoc
+    moveStraight()
+    if(locNumber==""):
+        time.sleep(2)
+        print("Reading location details for correct right turn")
+        id,locNumber = reader.readOnce()
+        #if locNumber is None, i.e. invalid, we set locNumber as empty string to read it again
+        if(locNumber==None):
+            locNumber=""
+
+    print("locNumb value : " + locNumber)
+    print("nextLoc before match" + nextLoc)
+    if(locNumber.startswith(nextLoc)):
+        nextLoc = str(endLoc)
+        print("nextLoc after match" + nextLoc)
+        t =15
+        for i in range(t):
+            moveStraight()
+        t = 30
+        for i in range(t):
+            hardLeft()
+            locNumber=""
+        t =25
+        for i in range(t):
+            moveStraight()
+        waitForInstruction()
+        nextAction="RIGHT"
+    else:
+        print("location does not match... move straight")
+        moveStraight()
+        locNumber=""
 
 def isBotInstructionRequired():
     global currLoc
@@ -107,26 +207,12 @@ def isBotInstructionRequired():
         return False
     return False
 stayStill()
-reader = SimpleMFRC522.SimpleMFRC522() 
+reader = SimpleMFRC522.SimpleMFRC522()
 while 1:
-    time.sleep(0.05)
     if(currLoc==""):
         print("READING.... bot instruction")
         readBotInstruction()
         time.sleep(1)
-    print("nextLoc " + nextLoc) 
-    #print("locNumber " + locNumber)
-    #if(locNumber !=""):
-    #    locationNumber = locNumber
-     #   print("locationNumber " + locationNumber)
-    #locNumber = "abc"
-
-    #input_state=IO.input(18)
-    #if(input_sate == False):
-    #   nextLoc = endLoc
-    #rotate 180 degree and start moving
-    #   turnOneEightDegree()
-      
      # button press event and set nextLoc=endLoc
     if(locationNumber == nextLoc): # if reached to destination stand still
         previousNumber = locationNumber
@@ -136,9 +222,9 @@ while 1:
             turnLeft()
         else:
             turnRight()
-        nextLoc = endLoc    
+        nextLoc = endLoc
         manualDelay()
-        
+
     print("starting.... 2")
     if(IO.input(LIR)==False and IO.input(RIR)==False and IO.input(CIR)==False): #both while move forward
         print("starting.... 3")
@@ -147,91 +233,57 @@ while 1:
             previousNumber=""
         # move left or right
         if(nextLoc=="End"):
-             # move right
-            print("turning right.... 4")
-            turnRight()           
+            print("Moving to End Location")
+            if(nextAction=="LEFT"):
+                t =15
+                for i in range(t):
+                    moveStraight()
+                t = 30
+                for i in range(t):
+                    hardLeft()
+                    locNumber=""
+            elif(nextAction=="RIGHT"):
+                t =15
+                for i in range(t):
+                    moveStraight()
+                t = 30
+                for i in range(t):
+                    hardRight()
+                    locNumber=""
+            else:
+                t =15
+                for i in range(t):
+                    moveStraight()
+                t = 30
+                for i in range(t):
+                    hardRight()
+                    locNumber=""
+            #make nextAction empty to trace back to end automatically
+            nextAction=""
         if(nextLoc=="Start"):
              # move left
             print("turning left.... 5")
             turnLeft()
     elif(IO.input(LIR)==False and IO.input(CIR)==False and IO.input(RIR)==True): #turn left
-        print("turning left.... 6")
-
-        if(locNumber==""):
-            stayStill()
-            id, locNumber = reader.readOnce()
-        if(locNumber==None):
-            locNumber=""
-        if(locNumber.startswith(nextLoc)):
-            nextLoc = str(endLoc)
-            print("turning right.... 6.1")
-            t = 30
-            for i in range(t):
-                turnLeft()
-                turnLeft()
-                turnLeft()
-                moveStraight()
-                locNumber=""
+        print("turning left.... FFT")
+        if(nextLoc!="End"):
+            performLeft()
         else:
-            print("location does not match... move straight 6.2")
-            moveStraight()
-            locNumber=""
+            turnLeft()
     elif(IO.input(LIR)==False and IO.input(CIR)==True and IO.input(RIR)==True): #turn left
         print("turning left.... 7")
         turnLeft()
     elif(IO.input(LIR)==True and IO.input(CIR)==False and IO.input(RIR)==False): #turn right
-        print("locNumber 00: " + locNumber)
-        moveStraight()
-        if(locNumber==""):    
-            print("reading....locNumber : " + locNumber + "...") 
-            time.sleep(2)
-            print("waking up from 2 secs   11.0: ")
-            id,locNumber = reader.readOnce()
-            if(locNumber==None):
-                locNumber=""
-        print("locNumb vcer 11: " )
-        print(locNumber)
-        print("locNumb type")
-        print(type(locNumber))
-
-        print("locNumb vcer 11: " + locNumber)
-        print("nextLoc   11: " + nextLoc)
-        print(locNumber.startswith("L1"))
-        print(len(nextLoc))
-        testloc = str(locNumber)
-        print(len(testloc))
-        print(len("L1"))
-        if(locNumber.startswith(nextLoc)):
-            nextLoc = str(endLoc)
-            print("turning right.... 8")
-            t = 30
-            for i in range(t):
-                turnRight()
-                turnRight()
-                turnRight()
-                moveStraight()
-                locNumber=""
+        print("turning left.... TFT")
+        if(nextLoc!="End"):
+            performRight()
         else:
-            print("location does not match... move straight 8.1")
-            moveStraight()
-            locNumber=""
+            turnRight()
     elif(IO.input(LIR)==True and IO.input(CIR)==False and IO.input(RIR)==True): #move straight
         print("moving straight.... 9")
         moveStraight()
     elif(IO.input(LIR)==True and IO.input(CIR)==True and IO.input(RIR)==False): #turn right
         print("turning right.... 10")
         turnRight()
-    elif(IO.input(LIR)==True and IO.input(CIR)==True and IO.input(RIR)==True): #turn 180 degree  
-        print("turning 180 degree.... 11")
-        t = 90
-        for i in range(t):
-            turnOneEightDegree()
-        t = 10
-        for i in range(t):    
-            stayStill()
-            time.sleep(i);
-    else:  #stay still
-        print("starting.... 12")
-        stayStill()
-
-              
+    elif(IO.input(LIR)==True and IO.input(CIR)==True and IO.input(RIR)==True): #turn 180 degree
+        moveStraight()
